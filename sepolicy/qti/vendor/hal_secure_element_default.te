@@ -2,3 +2,18 @@ hal_client_domain(hal_secure_element_default, hal_nfc)
 
 allow hal_secure_element_default hal_nfc_hwservice:hwservice_manager find;
 allow hal_secure_element_default hal_nfc_service:service_manager find;
+
+# The HIDL eSE service also publishes the NXP extension interface alongside
+# ISecureElement/eSE1, and reads its tuning from /vendor/etc/libese-nxp.conf.
+# A plain allow rather than add_hwservice(): hal_nfc_default already holds add
+# on this service, so the neverallow the macro emits would not hold.
+allow hal_secure_element_default nxpese_hwservice:hwservice_manager { add find };
+allow hal_secure_element_default hidl_base_hwservice:hwservice_manager add;
+
+allow hal_secure_element_default vendor_configs_file:file r_file_perms;
+
+# The stock eSE HAL reads persist.vendor.nfc.* (the config file name among
+# others) that the NFC HAL and init.sony.rc set:
+#   avc: denied { read } for name="u:object_r:vendor_persist_nfc_prop:s0"
+#        scontext=u:r:hal_secure_element_default:s0
+get_prop(hal_secure_element_default, vendor_persist_nfc_prop)
